@@ -23,136 +23,80 @@
  */
 package org.modeshape.rhq.plugin;
 
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.managed.api.ComponentType;
-import org.jboss.managed.api.ManagedComponent;
-import org.jboss.metatype.api.values.CollectionValueSupport;
-import org.jboss.metatype.api.values.CompositeValueSupport;
-import org.jboss.metatype.api.values.MetaValue;
-import org.modeshape.rhq.plugin.util.ModeShapeModuleView;
+import org.modeshape.rhq.plugin.util.DmrUtil;
 import org.modeshape.rhq.plugin.util.PluginConstants;
-import org.modeshape.rhq.plugin.util.ProfileServiceUtil;
 import org.rhq.core.domain.configuration.Configuration;
 import org.rhq.core.domain.configuration.PropertyList;
 import org.rhq.core.domain.configuration.PropertyMap;
 import org.rhq.core.domain.configuration.PropertySimple;
 import org.rhq.core.pluginapi.inventory.DiscoveredResourceDetails;
-import org.rhq.core.pluginapi.inventory.InvalidPluginConfigurationException;
 import org.rhq.core.pluginapi.inventory.ResourceDiscoveryComponent;
 import org.rhq.core.pluginapi.inventory.ResourceDiscoveryContext;
+import org.rhq.modules.plugins.jbossas7.ASConnection;
+import org.rhq.modules.plugins.jbossas7.BaseComponent;
+import org.rhq.modules.plugins.jbossas7.json.Address;
+import org.rhq.modules.plugins.jbossas7.json.ReadResource;
+import org.rhq.modules.plugins.jbossas7.json.Result;
 
 /**
  * 
  */
 public class RepositoryDiscoveryComponent implements
-		ResourceDiscoveryComponent<EngineComponent> {
+		ResourceDiscoveryComponent<BaseComponent<?>> {
 
-	private final Log log = LogFactory
-			.getLog(PluginConstants.DEFAULT_LOGGER_CATEGORY);
-
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @see org.rhq.core.pluginapi.inventory.ResourceDiscoveryComponent#discoverResources(org.rhq.core.pluginapi.inventory.ResourceDiscoveryContext)
-	 */
-	@Override
-    @SuppressWarnings( "rawtypes" )
-    public Set<DiscoveredResourceDetails> discoverResources(
-			ResourceDiscoveryContext discoveryContext)
-			throws InvalidPluginConfigurationException, Exception {
-
-		Set<DiscoveredResourceDetails> discoveredResources = new HashSet<DiscoveredResourceDetails>();
-
-		ManagedComponent mc = ProfileServiceUtil
-				.getManagedComponent(
-						((EngineComponent) discoveryContext
-								.getParentResourceComponent()).getConnection(),
-						new ComponentType(
-								PluginConstants.ComponentType.Engine.MODESHAPE_TYPE,
-								PluginConstants.ComponentType.Engine.MODESHAPE_SUB_TYPE),
-						PluginConstants.ComponentType.Engine.MODESHAPE_ENGINE);
-
-		if (mc==null){
-			log.debug("No ModeShape Repositories discovered");
-			return discoveredResources;
-		}
+	public Set<DiscoveredResourceDetails> discoverResources(
+			ResourceDiscoveryContext<BaseComponent<?>> context)
+			throws Exception {
 		
-		String operation = "getRepositories";
+		Set<DiscoveredResourceDetails> details = new HashSet<DiscoveredResourceDetails>();
+		DiscoveredResourceDetails detail = null;
+		final Log log = LogFactory
+				.getLog(PluginConstants.DEFAULT_LOGGER_CATEGORY);
 
-		MetaValue repositories = ModeShapeModuleView
-				.executeManagedOperation(mc, operation,
-						new MetaValue[] { null });
+		BaseComponent<?> parentComponent = context.getParentResourceComponent();
+		ASConnection connection = parentComponent.getASConnection();
 
-		if (repositories == null) {
-			return discoveredResources;
-		}
+		Address addr = DmrUtil.getModeShapeAddress();
+		Result result = connection.execute(new ReadResource(addr));
 
-		Collection<MetaValue> repositoryCollection = ModeShapeModuleView
-				.getRepositoryCollectionValue(repositories);
+		if (result.isSuccess()) {
 
-		for (MetaValue managedRepository : repositoryCollection) {
+			Result repoResult = connection.execute(DmrUtil.getRepositories());
 
-			MetaValue name = ((CompositeValueSupport)managedRepository).get("name");
-			MetaValue version = ModeShapeModuleView
-					.executeManagedOperation(mc, "getRepositoryVersion",
-							name);
+			Map<?, ?> repoMap = (LinkedHashMap<?, ?>) repoResult.getResult();
+			Iterator<?> repoIterator = repoMap.keySet().iterator();
 
-			/**
-			 * 
-			 * A discovered resource must have a unique key, that must stay the
-			 * same when the resource is discovered the next time
-			 */
-			DiscoveredResourceDetails detail = new DiscoveredResourceDetails(
-					discoveryContext.getResourceType(), // ResourceType
-					ProfileServiceUtil.stringValue(name), // Resource Key
-					ProfileServiceUtil.stringValue(name), // Resource name
-					ProfileServiceUtil.stringValue(version), // Version
-					PluginConstants.ComponentType.Repository.MODESHAPE_REPOSITORY_DESC, // Description
-					discoveryContext.getDefaultPluginConfiguration(), // Plugin config
-					null // Process info from a process scan
-			);
-			
-			Configuration c = detail.getPluginConfiguration();
+			while (repoIterator.hasNext()) {
+				String repoName = (String) repoIterator.next();
+				Map<?, ?> repoValues = (Map<?, ?>) repoMap.get(repoName);
 
-			operation = "getRepositoryProperties";
-
-			MetaValue[] args = new MetaValue[] {
-					name};
-			
-			MetaValue properties = ModeShapeModuleView
-					.executeManagedOperation(mc, operation, args);
-
-			MetaValue[] propertyArray = ((CollectionValueSupport) properties)
-					.getElements();
-
-			PropertyList list = new PropertyList("propertyList");
-			PropertyMap propMap = null;
-			c.put(list);
-			
-			for (MetaValue property : propertyArray) {
-
-				CompositeValueSupport proCvs = (CompositeValueSupport) property;
-				propMap = new PropertyMap("map");
-				propMap.put(new PropertySimple("label", ProfileServiceUtil
-						.stringValue(proCvs.get("label"))));
-				propMap.put(new PropertySimple("value", ProfileServiceUtil
-						.stringValue(proCvs.get("value"))));
-				list.add(propMap);
+				detail = new DiscoveredResourceDetails(
+						context.getResourceType(), // DataType
+						repoName, // Key
+						repoName, // Name
+						//TODO Get ModeShape version
+						"3.3", // Version
+						context.getResourceType().getDescription(), context.getDefaultPluginConfiguration(),
+						null);
+				details.add(detail);
+				log.debug("Discovered ModeShape Repository: " + repoName);
 			}
-
-			
-
-			// Add to return values
-			discoveredResources.add(detail);
-			log.debug("Discovered ModeShape Repository: " + name);
+		} else {
+			return details;
 		}
 
-		return discoveredResources;
+		return details;
 
 	}
+
+	
 }

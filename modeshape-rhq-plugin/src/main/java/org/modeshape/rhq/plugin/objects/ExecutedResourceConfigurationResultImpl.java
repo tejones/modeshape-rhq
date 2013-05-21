@@ -26,8 +26,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.jboss.managed.api.ManagedOperation;
-import org.jboss.metatype.api.values.MetaValue;
 import org.rhq.core.domain.configuration.PropertyList;
 import org.rhq.core.domain.configuration.PropertyMap;
 import org.rhq.core.domain.configuration.PropertySimple;
@@ -61,7 +59,6 @@ public class ExecutedResourceConfigurationResultImpl implements ExecutedResult {
         this.componentType = componentType;
         this.operationName = operationName;
         this.propertDefinitions = propDefs;
-        init();
     }
 
     public void reset() {
@@ -118,41 +115,6 @@ public class ExecutedResourceConfigurationResultImpl implements ExecutedResult {
     @Override
     public void setContent( String content ) {
         this.content = content;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @see org.modeshape.rhq.plugin.objects.ExecutedResult#setContent(org.jboss.metatype.api.values.MetaValue)
-     */
-    @Override
-    public void setContent( MetaValue content ) {
-    }
-
-    private void init() {
-        fieldNameList = new LinkedList<String>();
-
-        PropertyDefinition listPropDefinition = (PropertyDefinition)propertDefinitions.get(LISTNAME);
-
-        PropertyDefinition propertyDefinitionMap = ((PropertyDefinitionList)listPropDefinition).getMemberDefinition();
-        Map simpleProperties = ((PropertyDefinitionMap)propertyDefinitionMap).getPropertyDefinitions();
-        Iterator simplePropertiesIter = simpleProperties.values().iterator();
-
-        while (simplePropertiesIter.hasNext()) {
-            PropertyDefinition simpleProp = (PropertyDefinition)simplePropertiesIter.next();
-            String fieldName = ((PropertyDefinitionSimple)simpleProp).getName();
-            fieldNameList.add(fieldName);
-        }
-
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @see org.modeshape.rhq.plugin.objects.ExecutedResult#setManagedOperation(org.jboss.managed.api.ManagedOperation)
-     */
-    @Override
-    public void setManagedOperation( ManagedOperation managedOperation ) {
     }
 
 }

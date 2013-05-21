@@ -27,8 +27,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.jboss.managed.api.ManagedOperation;
-import org.jboss.metatype.api.values.MetaValue;
 import org.rhq.core.domain.configuration.Property;
 import org.rhq.core.domain.configuration.PropertyList;
 import org.rhq.core.domain.configuration.PropertyMap;
@@ -39,7 +37,6 @@ import org.rhq.core.domain.configuration.definition.PropertyDefinitionMap;
 import org.rhq.core.domain.configuration.definition.PropertyDefinitionSimple;
 import org.rhq.core.domain.operation.OperationDefinition;
 import org.rhq.core.pluginapi.operation.OperationResult;
-import org.rhq.plugins.jbossas5.util.ConversionUtils;
 
 @SuppressWarnings( "rawtypes" )
 public class ExecutedOperationResultImpl implements ExecutedResult {
@@ -63,8 +60,6 @@ public class ExecutedOperationResultImpl implements ExecutedResult {
     Property property;
 
     PropertyDefinition propertyDefinition;
-
-    ManagedOperation managedOperation;
 
     OperationDefinition operationDefinition;
 
@@ -139,68 +134,31 @@ public class ExecutedOperationResultImpl implements ExecutedResult {
         operationResult.setSimpleResult(content);
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @see org.modeshape.rhq.plugin.objects.ExecutedResult#setContent(org.jboss.metatype.api.values.MetaValue)
-     */
-    @Override
-    public void setContent( MetaValue content ) {
-        this.content = content;
-        this.result = content;
-        ConversionUtils.convertManagedOperationResults(managedOperation,
-                                                       content,
-                                                       operationResult.getComplexResults(),
-                                                       operationDefinition);
-    }
-
-    /**
-     * @return managedOperation
-     */
-    public ManagedOperation getManagedOperation() {
-        return managedOperation;
-    }
-
-    /**
-     * @param managedOperation Sets managedOperation to the specified value.
-     */
-    @Override
-    public void setManagedOperation( ManagedOperation managedOperation ) {
-        this.managedOperation = managedOperation;
-    }
-
     private void init() {
-        fieldNameList = new LinkedList<String>();
+		fieldNameList = new LinkedList();
 
-        Iterator operationsIter = operationDefinitionSet.iterator();
+		Iterator operationsIter = operationDefinitionSet.iterator();
 
-        while (operationsIter.hasNext()) {
-            OperationDefinition opDef = (OperationDefinition)operationsIter.next();
-            if (opDef.getName().equals(operationName)) {
-                if (opDef.getResultsConfigurationDefinition() == null) break;
+		while (operationsIter.hasNext()) {
+			OperationDefinition opDef = (OperationDefinition) operationsIter
+					.next();
+			if (opDef.getName().equals(operationName)) {
+				if (opDef.getResultsConfigurationDefinition()==null) break;
+					
+				Map propDefs = opDef.getResultsConfigurationDefinition()
+						.getPropertyDefinitions();
+				PropertyDefinition listPropDefinition = (PropertyDefinition) propDefs
+						.get(LISTNAME);
+				
+				if (listPropDefinition == null) {
+					continue;
+				}
 
-                this.operationDefinition = opDef;
-
-                Map propDefs = opDef.getResultsConfigurationDefinition().getPropertyDefinitions();
-                PropertyDefinition listPropDefinition = (PropertyDefinition)propDefs.get(LISTNAME);
-
-                if (listPropDefinition == null) {
-                    continue;
-                }
-
-                PropertyDefinition propertyDefinitionMap = ((PropertyDefinitionList)listPropDefinition).getMemberDefinition();
-                Map simpleProperties = ((PropertyDefinitionMap)propertyDefinitionMap).getPropertyDefinitions();
-                Iterator simplePropertiesIter = simpleProperties.values().iterator();
-
-                while (simplePropertiesIter.hasNext()) {
-                    PropertyDefinition simpleProp = (PropertyDefinition)simplePropertiesIter.next();
-                    String fieldName = ((PropertyDefinitionSimple)simpleProp).getName();
-                    fieldNameList.add(fieldName);
-                }
-
-                break;
-            }
-        }
-    }
+				PropertyDefinition propertyDefinitionMap = ((PropertyDefinitionList) listPropDefinition)
+						.getMemberDefinition();
+				break;
+			}
+		}
+	}
 
 }

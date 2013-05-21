@@ -20,21 +20,21 @@
 		FSF site: http://www.fsf.org. */
 	-->
 
-<plugin name="ModeShapePlugin" displayName="ModeShape Plugin"
+<plugin name="ModeShape" displayName="ModeShape Plugin"
 	package="org.modeshape.rhq.plugin" version="1.0.1"
 	description="Supports management and monitoring of ModeShape"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:xmlns:rhq-plugin"
 	xmlns:c="urn:xmlns:rhq-configuration">
 
-	<depends plugin="JBossAS5" useClasses="true" />
+	<depends plugin="JBossAS7" useClasses="true" />
 
-	<server name="ModeShape Engine" description="ModeShape JCR Engine"
+	<server name="modeshape" description="ModeShape JCR Engine"
 		class="EngineComponent" discovery="EngineDiscoveryComponent"
 		singleton="true">
 
 		<runs-inside>
-			<parent-resource-type name="JBossAS Server"
-				plugin="JBossAS5" />
+			<parent-resource-type name="JBossAS7 Standalone Server"
+				plugin="JBossAS7" />
 		</runs-inside>
 
 		<operation name="restart" displayName="Start/restart"
@@ -53,22 +53,47 @@
                 description="The number of JCR sessions that are currently active" />
 			
 			<resource-configuration>
-                <c:list-property name="propertyList" displayName="Properties"
-                    description="Properties for this sequencer" readOnly="true">
-                    <c:map-property name="map" description="Properties for this sequencer"
-                        readOnly="true">
-                        <c:simple-property name="label" displayName="Name"
-                            description="The name of this property" required="false"
-                            readOnly="true" />
-                        <c:simple-property name="value" displayName="Value"
-                            description="The value of this property" required="false"
-                            readOnly="true" />
-                      </c:map-property>
-                </c:list-property>
-            </resource-configuration>
+				<c:group name="general_properties" displayName="General Properties"
+						hiddenByDefault="false">
+                        <c:simple-property name="enable-monitoring" displayName="Enable Monitoring"
+                            description="Enable monitoring of the repository" required="false"
+                            readOnly="false" type="boolean" />
+                        <c:simple-property name="jndi-name" displayName="JNDI Name"
+                            description="The JNDI name for this repository" required="false"
+                            readOnly="false" />
+                </c:group>
+                <c:group name="workspace_properties" displayName="Workspace Properties"
+						hiddenByDefault="false">
+                        <c:simple-property name="predefined-workspace-names" displayName="Predefined Workspace Names"
+                            description="The names of the workspaces that the repository will ensure exist (or create if necessary) when the repository starts up. " required="false"
+                            readOnly="false"/>
+                        <c:simple-property name="default-initial-content" displayName="Default Initial Content"
+                            description="Initial content for pre-defined and new workspaces." required="false"
+                            readOnly="false" />
+                        <c:simple-property name="default-workspace" displayName="Default Workspace Name"
+                            description="The name of the workspace that should be used when Sessions are created without specifying an explicit workspace name. By default, the 'default' workspace name is used. " required="false"
+                            readOnly="false" />
+                        <c:simple-property name="allow-workspace-creation" displayName="Allow Workspace Creation"
+                            description="Specifies whether authenticated and authorized JCR users can create additional workspaces beyond the predefined, system, and default workspaces. The default value is 'true'. Set this to 'false' when the workspaces are to be fixed." required="false"
+                            readOnly="false" type="boolean"/>
+                        <c:simple-property name="workspaces-cache-container" displayName="Workspaces Cache Container"
+                            description="The name of the Infinispan cache container in which the cache can be found. If not provided, the 'modeshape' cache container will be used." required="false"
+                            readOnly="false"/>    
+                </c:group>
+                <c:group name="cluster_properties" displayName="Cluster Properties"
+						hiddenByDefault="false">
+                        <c:simple-property name="cluster-name" displayName="Cluster Name"
+                            description="Defines the name of the communication channel used by this and other clustered repositories." required="false"
+                            readOnly="false"/>
+                        <c:simple-property name="cluster-stack" displayName="Default Initial Content"
+                            description="Defines the JGroups stack used by the repository when clustered." required="false"
+                            readOnly="false" />
+                </c:group>
+              </resource-configuration>
 		</service>
-
-		<service name="Sequencing Service" description="ModeShape Sequencing Service"
+		
+	
+		<!-- <service name="Sequencing Service" description="ModeShape Sequencing Service"
 			singleton="true" class="SequencingServiceComponent" discovery="SequencingServiceDiscoveryComponent">
 
 			<metric displayName="Number Of Nodes Sequenced" defaultOn="true"
@@ -79,7 +104,7 @@
 				displayType="detail" category="throughput" property="getNodesSkippedCount"
 				description="The number of nodes that were skipped because no sequencers applied" />
 
-		</service>
+		</service> -->
 
 		<service name="Sequencers" description="Sequencers deployed to this ModeShape instance"
 			class="SequencerComponent" discovery="SequencerDiscoveryComponent">

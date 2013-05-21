@@ -62,21 +62,13 @@ import org.teiid.rhq.plugin.util.DmrUtil;
 public class PlatformDiscoveryComponent implements
 		ResourceDiscoveryComponent<BaseComponent<?>> {
 
-	private final Log log = LogFactory.getLog(this.getClass());
-
 	public Set<DiscoveredResourceDetails> discoverResources(
 			ResourceDiscoveryContext<BaseComponent<?>> context)
 			throws Exception {
 
 		Set<DiscoveredResourceDetails> details = new HashSet<DiscoveredResourceDetails>();
 
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.configure(
-				DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.configure(
-				DeserializationConfig.Feature.READ_ENUMS_USING_TO_STRING, true);
-
-		BaseComponent parentComponent = context.getParentResourceComponent();
+	    BaseComponent parentComponent = context.getParentResourceComponent();
 		ASConnection connection = parentComponent.getASConnection();
 		Configuration config = context.getDefaultPluginConfiguration();
 

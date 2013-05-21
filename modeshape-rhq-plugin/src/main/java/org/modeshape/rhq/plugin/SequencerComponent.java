@@ -29,7 +29,7 @@ import org.mc4j.ems.connection.EmsConnection;
 import org.rhq.core.domain.measurement.MeasurementReport;
 import org.rhq.core.domain.measurement.MeasurementScheduleRequest;
 import org.rhq.core.pluginapi.inventory.CreateResourceReport;
-import org.rhq.plugins.jbossas5.connection.ProfileServiceConnection;
+import org.rhq.modules.plugins.jbossas7.ASConnection;
 
 public class SequencerComponent extends Facet {
 
@@ -69,19 +69,9 @@ public class SequencerComponent extends Facet {
 	 * @see org.rhq.plugins.jbossas5.ProfileServiceComponent#getConnection()
 	 */
 	@Override
-	public ProfileServiceConnection getConnection() {
+	public ASConnection getASConnection() {
 		return ((EngineComponent) this.resourceContext
-				.getParentResourceComponent()).getConnection();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @see org.rhq.plugins.jmx.JMXComponent#getEmsConnection()
-	 */
-	@Override
-	public EmsConnection getEmsConnection() {
-		return null;
+				.getParentResourceComponent()).getASConnection();
 	}
 
 }

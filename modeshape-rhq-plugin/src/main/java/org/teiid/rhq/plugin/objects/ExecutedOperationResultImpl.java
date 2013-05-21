@@ -141,19 +141,6 @@ public class ExecutedOperationResultImpl implements ExecutedResult {
 
 				PropertyDefinition propertyDefinitionMap = ((PropertyDefinitionList) listPropDefinition)
 						.getMemberDefinition();
-//				Map simpleProperties = ((PropertyDefinitionMap) propertyDefinitionMap)
-//						.getPropertyDefinitions();
-//				Iterator simplePropertiesIter = simpleProperties.values()
-//						.iterator();
-//				
-//				while (simplePropertiesIter.hasNext()) {
-//					PropertyDefinition simpleProp = (PropertyDefinition) simplePropertiesIter
-//							.next();
-//					String fieldName = ((PropertyDefinitionSimple) simpleProp)
-//							.getName();
-//					fieldNameList.add(fieldName);
-//				}
-				
 				break;
 			}
 		}

@@ -28,18 +28,17 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.managed.api.ComponentType;
-import org.jboss.managed.api.ManagedComponent;
-import org.jboss.metatype.api.values.MetaValue;
-import org.modeshape.rhq.plugin.util.ModeShapeModuleView;
+import org.modeshape.rhq.plugin.util.DmrUtil;
 import org.modeshape.rhq.plugin.util.PluginConstants;
-import org.modeshape.rhq.plugin.util.ProfileServiceUtil;
+import org.rhq.core.domain.configuration.Configuration;
 import org.rhq.core.pluginapi.inventory.DiscoveredResourceDetails;
-import org.rhq.core.pluginapi.inventory.InvalidPluginConfigurationException;
 import org.rhq.core.pluginapi.inventory.ResourceDiscoveryComponent;
 import org.rhq.core.pluginapi.inventory.ResourceDiscoveryContext;
+import org.rhq.modules.plugins.jbossas7.ASConnection;
 import org.rhq.modules.plugins.jbossas7.BaseComponent;
-import org.rhq.plugins.jbossas5.ApplicationServerComponent;
+import org.rhq.modules.plugins.jbossas7.json.Address;
+import org.rhq.modules.plugins.jbossas7.json.ReadResource;
+import org.rhq.modules.plugins.jbossas7.json.Result;
 
 /**
  * 
@@ -47,36 +46,24 @@ import org.rhq.plugins.jbossas5.ApplicationServerComponent;
 public class EngineDiscoveryComponent implements
 		ResourceDiscoveryComponent<BaseComponent<?>> {
 
-	private final Log log = LogFactory
-			.getLog(PluginConstants.DEFAULT_LOGGER_CATEGORY);
+	public Set<DiscoveredResourceDetails> discoverResources(
+		ResourceDiscoveryContext<BaseComponent<?>> context)
+		throws Exception {
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @see org.rhq.core.pluginapi.inventory.ResourceDiscoveryComponent#discoverResources(org.rhq.core.pluginapi.inventory.ResourceDiscoveryContext)
-	 */
-	@Override
-    @SuppressWarnings( "rawtypes" )
-    public Set<DiscoveredResourceDetails> discoverResources(
-			ResourceDiscoveryContext discoveryContext)
-			throws InvalidPluginConfigurationException, Exception {
+	Set<DiscoveredResourceDetails> discoveredResources = new HashSet<DiscoveredResourceDetails>();
+	final Log log = LogFactory.getLog(PluginConstants.DEFAULT_LOGGER_CATEGORY);
 
-		Set<DiscoveredResourceDetails> discoveredResources = new HashSet<DiscoveredResourceDetails>();
+    BaseComponent<?> parentComponent = context.getParentResourceComponent();
+	ASConnection connection = parentComponent.getASConnection();
+	Configuration config = context.getDefaultPluginConfiguration();
 
-		ManagedComponent mc = ProfileServiceUtil
-				.getManagedComponent(((ApplicationServerComponent) discoveryContext
-						.getParentResourceComponent()).getConnection(),
-						new ComponentType(
-								PluginConstants.ComponentType.Engine.MODESHAPE_TYPE,
-								PluginConstants.ComponentType.Engine.MODESHAPE_SUB_TYPE),
-						PluginConstants.ComponentType.Engine.MODESHAPE_ENGINE);
+	Address addr = DmrUtil.getModeShapeAddress();
+	Result result = connection.execute(new ReadResource(addr));
+	
+	if (result.isSuccess()) {	
 		
-		if (mc==null){
-			log.debug("No ModeShape Engine discovered");
-			return discoveredResources;
-		}
-		
-		String version = ProfileServiceUtil.stringValue(ModeShapeModuleView.executeManagedOperation(mc, "getVersion", new MetaValue[]{null}));
+		//TODO: Get version somehow?
+		//String version = DmrUtil.stringValue(ModeShapeModuleView.executeManagedOperation(mc, "getVersion", new MetaValue[]{null}));
 
 		/**
 		 * 
@@ -84,13 +71,13 @@ public class EngineDiscoveryComponent implements
 		 * when the resource is discovered the next time
 		 */
 		DiscoveredResourceDetails detail = new DiscoveredResourceDetails(
-				discoveryContext.getResourceType(), // ResourceType
-				mc.getName(), // Resource Key
-				PluginConstants.ComponentType.Engine.MODESHAPE_DISPLAYNAME, // Resource
-				// name
-				version,
+				context.getResourceType(), // ResourceType
+				PluginConstants.ComponentType.Engine.MODESHAPE_DISPLAYNAME, // Resource Key
+				PluginConstants.ComponentType.Engine.MODESHAPE_DISPLAYNAME, // Resource name
+				//version,
+				"3.1.1",
 				PluginConstants.ComponentType.Engine.MODESHAPE_ENGINE, // Description
-				discoveryContext.getDefaultPluginConfiguration(), // Plugin Config
+				context.getDefaultPluginConfiguration(), // Plugin Config
 				null // Process info from a process scan
 		);
 
@@ -99,5 +86,10 @@ public class EngineDiscoveryComponent implements
 		log.debug("Discovered ModeShape Engine");
 		return discoveredResources;
 
+	}else{
+
+		log.debug("No ModeShape Engine discovered");
+		return discoveredResources;
 	}
+}
 }

@@ -26,13 +26,7 @@ package org.modeshape.rhq.plugin;
 import java.util.Map;
 import java.util.Set;
 
-import javax.naming.NamingException;
-
-import org.jboss.managed.api.ManagedComponent;
-import org.jboss.metatype.api.values.MetaValue;
-import org.mc4j.ems.connection.EmsConnection;
-import org.modeshape.rhq.plugin.util.ModeShapeModuleView;
-import org.modeshape.rhq.plugin.util.ProfileServiceUtil;
+import org.modeshape.rhq.plugin.util.DmrUtil;
 import org.modeshape.rhq.plugin.util.PluginConstants.ComponentType;
 import org.modeshape.rhq.plugin.util.PluginConstants.ComponentType.Engine;
 import org.rhq.core.domain.configuration.Configuration;
@@ -40,8 +34,11 @@ import org.rhq.core.domain.measurement.AvailabilityType;
 import org.rhq.core.domain.measurement.MeasurementReport;
 import org.rhq.core.domain.measurement.MeasurementScheduleRequest;
 import org.rhq.core.pluginapi.inventory.CreateResourceReport;
-import org.rhq.plugins.jbossas5.ApplicationServerComponent;
-import org.rhq.plugins.jbossas5.connection.ProfileServiceConnection;
+import org.rhq.modules.plugins.jbossas7.ASConnection;
+import org.rhq.modules.plugins.jbossas7.BaseComponent;
+import org.rhq.modules.plugins.jbossas7.json.Address;
+import org.rhq.modules.plugins.jbossas7.json.ReadResource;
+import org.rhq.modules.plugins.jbossas7.json.Result;
 
 public class EngineComponent extends Facet {
 
@@ -55,36 +52,12 @@ public class EngineComponent extends Facet {
 		return ComponentType.Engine.MODESHAPE_ENGINE;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @see org.modeshape.rhq.plugin.Facet#getAvailability()
-	 */
 	@Override
 	public AvailabilityType getAvailability() {
-		AvailabilityType isRunning = AvailabilityType.DOWN;
 
-		try {
-			ManagedComponent mc = ProfileServiceUtil.getManagedEngine(this
-					.getConnection());
-			if (mc == null) {
-				isRunning = AvailabilityType.DOWN;
-			} else {
-				MetaValue running = ModeShapeModuleView
-						.executeManagedOperation(mc, "isRunning",
-								new MetaValue[] { null });
-				if (ProfileServiceUtil.booleanValue(running).equals(
-						Boolean.TRUE)) {
-					isRunning = AvailabilityType.UP;
-				}
-			}
-		} catch (NamingException e) {
-			LOG.error("NamingException in getAvailability", e);
-		} catch (Exception e) {
-			LOG.error("Exception in getAvailability", e);
-		}
-
-		return isRunning;
+		Address address = DmrUtil.getModeShapeAddress();
+		Result result = getASConnection().execute(new ReadResource(address));
+		return (result.isSuccess()) ? AvailabilityType.UP: AvailabilityType.DOWN;
 	}
 
 	/**
@@ -124,26 +97,10 @@ public class EngineComponent extends Facet {
 	public CreateResourceReport createResource(CreateResourceReport arg0) {
 		return null;
 	}
-
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @see org.rhq.plugins.jbossas5.ProfileServiceComponent#getConnection()
-	 */
+	
 	@Override
-	public ProfileServiceConnection getConnection() {
-		return ((ApplicationServerComponent) this.resourceContext
-				.getParentResourceComponent()).getConnection();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @see org.rhq.plugins.jmx.JMXComponent#getEmsConnection()
-	 */
-	@Override
-	public EmsConnection getEmsConnection() {
-		return null;
+	public ASConnection getASConnection() {
+		return ((BaseComponent<BaseComponent<?>>) this.resourceContext.getParentResourceComponent()).getASConnection();
 	}
 
 }

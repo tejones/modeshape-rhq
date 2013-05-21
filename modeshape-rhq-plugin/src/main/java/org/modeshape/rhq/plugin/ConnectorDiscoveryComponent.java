@@ -28,21 +28,7 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.managed.api.ManagedComponent;
-import org.jboss.metatype.api.types.EnumMetaType;
-import org.jboss.metatype.api.values.CollectionValueSupport;
-import org.jboss.metatype.api.values.CompositeValueSupport;
-import org.jboss.metatype.api.values.EnumValueSupport;
-import org.jboss.metatype.api.values.MetaValue;
-import org.jboss.metatype.api.values.SimpleValueSupport;
-import org.modeshape.jboss.managed.ManagedEngine;
-import org.modeshape.rhq.plugin.util.ModeShapeModuleView;
 import org.modeshape.rhq.plugin.util.PluginConstants;
-import org.modeshape.rhq.plugin.util.ProfileServiceUtil;
-import org.rhq.core.domain.configuration.Configuration;
-import org.rhq.core.domain.configuration.PropertyList;
-import org.rhq.core.domain.configuration.PropertyMap;
-import org.rhq.core.domain.configuration.PropertySimple;
 import org.rhq.core.pluginapi.inventory.DiscoveredResourceDetails;
 import org.rhq.core.pluginapi.inventory.InvalidPluginConfigurationException;
 import org.rhq.core.pluginapi.inventory.ResourceDiscoveryComponent;
@@ -70,93 +56,93 @@ public class ConnectorDiscoveryComponent implements
 
 		Set<DiscoveredResourceDetails> discoveredResources = new HashSet<DiscoveredResourceDetails>();
 
-		ManagedComponent mc = ProfileServiceUtil
-				.getManagedEngine(
-						((EngineComponent) discoveryContext
-								.getParentResourceComponent()).getConnection());
-		
-		if (mc==null){
-			log.debug("No ModeShape Connectors discovered");
-			return discoveredResources;
-		}
-
-		String operation = "getConnectors";
-
-		MetaValue connectors = ModeShapeModuleView.executeManagedOperation(
-				mc, operation, new MetaValue[] { null });
-
-		if (connectors == null) {
-			return discoveredResources;
-		}
-
-		MetaValue[] mvConnectorArray = ((CollectionValueSupport) connectors)
-				.getElements();
-
-		for (MetaValue value : mvConnectorArray) {
-
-			CompositeValueSupport cvs = (CompositeValueSupport) value;
-			String name = ProfileServiceUtil.stringValue(cvs.get("name"));
-
-			/**
-			 * 
-			 * A discovered resource must have a unique key, that must stay the
-			 * same when the resource is discovered the next time
-			 */
-			DiscoveredResourceDetails detail = new DiscoveredResourceDetails(
-					discoveryContext.getResourceType(), // ResourceType
-					name, // Resource Key
-					name, // Resource name
-					null,
-					PluginConstants.ComponentType.Connector.DESCRIPTION, // Description
-					discoveryContext.getDefaultPluginConfiguration(), // Plugin
-																		// config
-					null // Process info from a process scan
-			);
-
-			Configuration c = detail.getPluginConfiguration();
-
-
-			//Load connector properties
-			operation = "getProperties";
+//		ManagedComponent mc = DmrUtil
+//				.getManagedEngine(
+//						((EngineComponent) discoveryContext
+//								.getParentResourceComponent()).getConnection());
+//		
+//		if (mc==null){
+//			log.debug("No ModeShape Connectors discovered");
+//			return discoveredResources;
+//		}
+//
+//		String operation = "getConnectors";
+//
+//		MetaValue connectors = ModeShapeModuleView.executeManagedOperation(
+//				mc, operation, new MetaValue[] { null });
+//
+//		if (connectors == null) {
+//			return discoveredResources;
+//		}
+//
+//		MetaValue[] mvConnectorArray = ((CollectionValueSupport) connectors)
+//				.getElements();
+//
+//		for (MetaValue value : mvConnectorArray) {
+//
+//			CompositeValueSupport cvs = (CompositeValueSupport) value;
+//			String name = DmrUtil.stringValue(cvs.get("name"));
+//
+//			/**
+//			 * 
+//			 * A discovered resource must have a unique key, that must stay the
+//			 * same when the resource is discovered the next time
+//			 */
+//			DiscoveredResourceDetails detail = new DiscoveredResourceDetails(
+//					discoveryContext.getResourceType(), // ResourceType
+//					name, // Resource Key
+//					name, // Resource name
+//					null,
+//					PluginConstants.ComponentType.Connector.DESCRIPTION, // Description
+//					discoveryContext.getDefaultPluginConfiguration(), // Plugin
+//																		// config
+//					null // Process info from a process scan
+//			);
+//
+//			Configuration c = detail.getPluginConfiguration();
+//
+//
+//			//Load connector properties
+//			operation = "getProperties";
 			
-			EnumValueSupport enumVs = new EnumValueSupport(new EnumMetaType(ManagedEngine.Component.values()), ManagedEngine.Component.CONNECTOR);
-			
-			MetaValue[] args = new MetaValue[] {
-					SimpleValueSupport.wrap(name),
-					enumVs};
-
-			MetaValue properties = ModeShapeModuleView
-					.executeManagedOperation(mc, operation, args);
-
-			MetaValue[] propertyArray = ((CollectionValueSupport) properties)
-					.getElements();
-
-			PropertyList connectorlist = new PropertyList("connectorPropertyList");
-			c.put(connectorlist);
-			loadProperties(propertyArray, connectorlist);
-
-			//Load connection pool properties
-			enumVs = new EnumValueSupport(new EnumMetaType(ManagedEngine.Component.values()), ManagedEngine.Component.CONNECTIONPOOL);
-			
-			args = new MetaValue[] {
-					SimpleValueSupport.wrap(name),
-					enumVs };
-
-			properties = ModeShapeModuleView
-					.executeManagedOperation(mc, operation, args);
-
-			propertyArray = ((CollectionValueSupport) properties)
-					.getElements();
-			PropertyList connectionPoollist = new PropertyList("connectionpoolPropertyList");
-			c.put(connectionPoollist);
-			loadProperties(propertyArray, connectionPoollist);
-			
-			detail.setPluginConfiguration(c);
+//			EnumValueSupport enumVs = new EnumValueSupport(new EnumMetaType(ManagedEngine.Component.values()), ManagedEngine.Component.CONNECTOR);
+//			
+//			MetaValue[] args = new MetaValue[] {
+//					SimpleValueSupport.wrap(name),
+//					enumVs};
+//
+//			MetaValue properties = ModeShapeModuleView
+//					.executeManagedOperation(mc, operation, args);
+//
+//			MetaValue[] propertyArray = ((CollectionValueSupport) properties)
+//					.getElements();
+//
+//			PropertyList connectorlist = new PropertyList("connectorPropertyList");
+//			c.put(connectorlist);
+//			loadProperties(propertyArray, connectorlist);
+//
+//			//Load connection pool properties
+//			enumVs = new EnumValueSupport(new EnumMetaType(ManagedEngine.Component.values()), ManagedEngine.Component.CONNECTIONPOOL);
+//			
+//			args = new MetaValue[] {
+//					SimpleValueSupport.wrap(name),
+//					enumVs };
+//
+//			properties = ModeShapeModuleView
+//					.executeManagedOperation(mc, operation, args);
+//
+//			propertyArray = ((CollectionValueSupport) properties)
+//					.getElements();
+//			PropertyList connectionPoollist = new PropertyList("connectionpoolPropertyList");
+//			c.put(connectionPoollist);
+//			loadProperties(propertyArray, connectionPoollist);
+//			
+//			detail.setPluginConfiguration(c);
 
 			// Add to return values
-			discoveredResources.add(detail);
-			log.debug("Discovered ModeShape repositories: " + mc.getName());
-		}
+		//	discoveredResources.add(detail);
+		//	log.debug("Discovered ModeShape repositories: " + mc.getName());
+	//	}
 
 		return discoveredResources;
 
@@ -167,20 +153,20 @@ public class ConnectorDiscoveryComponent implements
 	 * @param list
 	 * @throws Exception
 	 */
-	private void loadProperties(MetaValue[] propertyArray, PropertyList list)
-			throws Exception {
-		PropertyMap propMap;
-		for (MetaValue property : propertyArray) {
-
-			CompositeValueSupport proCvs = (CompositeValueSupport) property;
-			propMap = new PropertyMap("map");
-			propMap.put(new PropertySimple("label", ProfileServiceUtil
-					.stringValue(proCvs.get("label"))));
-			propMap.put(new PropertySimple("value", ProfileServiceUtil
-					.stringValue(proCvs.get("value"))));
-			propMap.put(new PropertySimple("description", ProfileServiceUtil
-					.stringValue(proCvs.get("description"))));
-			list.add(propMap);
-		}
-	}
+//	private void loadProperties(MetaValue[] propertyArray, PropertyList list)
+//			throws Exception {
+//		PropertyMap propMap;
+//		for (MetaValue property : propertyArray) {
+//
+//			CompositeValueSupport proCvs = (CompositeValueSupport) property;
+//			propMap = new PropertyMap("map");
+//			propMap.put(new PropertySimple("label", DmrUtil
+//					.stringValue(proCvs.get("label"))));
+//			propMap.put(new PropertySimple("value", DmrUtil
+//					.stringValue(proCvs.get("value"))));
+//			propMap.put(new PropertySimple("description", DmrUtil
+//					.stringValue(proCvs.get("description"))));
+//			list.add(propMap);
+//		}
+//	}
 }

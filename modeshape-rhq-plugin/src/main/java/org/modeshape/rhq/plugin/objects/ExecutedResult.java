@@ -23,8 +23,6 @@ package org.modeshape.rhq.plugin.objects;
 
 import java.util.Collection;
 import java.util.List;
-import org.jboss.managed.api.ManagedOperation;
-import org.jboss.metatype.api.values.MetaValue;
 
 public interface ExecutedResult {
 
@@ -34,14 +32,10 @@ public interface ExecutedResult {
 
     Object getResult();
 
-    void setManagedOperation( ManagedOperation managedOperation );
-
     List<String> getFieldNameList();
 
     @SuppressWarnings( "rawtypes" )
     void setContent( Collection content );
-
-    void setContent( MetaValue content );
 
     void setContent( String content );
 

@@ -56,6 +56,12 @@ public interface PluginConstants {
 			public static interface Operations {
 				public final static String SHUTDOWN = "shutdown"; //$NON-NLS-1$
 				public final static String RESTART = "restart"; //$NON-NLS-1$
+				public final static String READ_CHILDREN_RESOURCES = "read-children-resources"; //$NON-NLS-1$
+				
+				public static interface Parameters {
+					public final static String CHILD_TYPE = "child-type"; //$NON-NLS-1$
+					public final static String REPOSITORIES = "repository"; //$NON-NLS-1$
+				}
 				
 			}
 

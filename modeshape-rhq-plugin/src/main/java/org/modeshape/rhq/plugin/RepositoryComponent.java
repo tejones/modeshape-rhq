@@ -23,11 +23,15 @@
  */
 package org.modeshape.rhq.plugin;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.mc4j.ems.connection.EmsConnection;
+import org.modeshape.rhq.plugin.util.DmrUtil;
 import org.modeshape.rhq.plugin.util.ModeShapeModuleView;
 import org.modeshape.rhq.plugin.util.PluginConstants;
 import org.modeshape.rhq.plugin.util.PluginConstants.ComponentType;
@@ -38,10 +42,38 @@ import org.rhq.core.domain.measurement.MeasurementDataTrait;
 import org.rhq.core.domain.measurement.MeasurementReport;
 import org.rhq.core.domain.measurement.MeasurementScheduleRequest;
 import org.rhq.core.pluginapi.inventory.CreateResourceReport;
-import org.rhq.plugins.jbossas5.connection.ProfileServiceConnection;
+import org.rhq.core.pluginapi.inventory.DiscoveredResourceDetails;
+import org.rhq.core.pluginapi.inventory.ResourceContext;
+import org.rhq.modules.plugins.jbossas7.ASConnection;
+import org.rhq.modules.plugins.jbossas7.BaseComponent;
+import org.rhq.modules.plugins.jbossas7.json.Address;
+import org.rhq.modules.plugins.jbossas7.json.ReadResource;
+import org.rhq.modules.plugins.jbossas7.json.Result;
 
 public class RepositoryComponent extends Facet {
 
+	final String[] PROPERTIES = new String[] {"enable-monitoring","jndi-name", "predefined-workspace-names", "default-initial-content", "default-workspace", "allow-workspace-creation", "workspaces-cache-container"};
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @seeorg.teiid.rhq.plugin.Facet#start(org.rhq.core.pluginapi.inventory.
+	 * ResourceContext)
+	 */
+	@Override
+	public void start(ResourceContext context) {
+		this.setComponentName(context.getPluginConfiguration().getSimpleValue(
+				"fullName", null));
+		this.resourceConfiguration = context.getPluginConfiguration();
+		this.componentType = PluginConstants.ComponentType.Repository.NAME;
+		
+		try {
+			super.start(context);
+			}catch (Exception e){
+				
+			}
+	}
+	
 	/**
 	 * {@inheritDoc}
 	 *
@@ -87,7 +119,7 @@ public class RepositoryComponent extends Facet {
 			String name = request.getName();
 			LOG.debug("Measurement name = " + name); //$NON-NLS-1$
 
-			Object metricReturnObject = view.getMetric(getConnection(),
+			Object metricReturnObject = view.getMetric(getASConnection(),
 					getComponentType(), this.getComponentIdentifier(), name,
 					valueMap);
 
@@ -106,6 +138,52 @@ public class RepositoryComponent extends Facet {
 			}
 		}
 	}
+	
+	@Override
+	 public Configuration loadResourceConfiguration() throws Exception {
+
+		
+		
+		Address addr = DmrUtil.getModeShapeAddress();
+		Result result = getASConnection().execute(new ReadResource(addr));
+		Result repoResult = null;
+
+		if (result.isSuccess()) {
+			repoResult = getASConnection().execute(DmrUtil.getRepositories());
+		} else{
+			return null;
+		}
+			
+		Map<?, ?> repoMap = (LinkedHashMap<?, ?>) repoResult.getResult();
+
+		String repoName = this.deploymentName;
+		Map<?, ?> repoValues = (Map<?, ?>) repoMap.get(repoName);
+		getProperties(repoValues, this.resourceConfiguration);
+		
+		return this.resourceConfiguration; 
+	}
+	
+	private void getProperties(Map<?, ?> repoValues,
+			Configuration c) {
+
+		Iterator<?> propertyIterator = repoValues.keySet().iterator();
+		
+		while (propertyIterator.hasNext()) {
+
+			String propName = (String) propertyIterator.next();
+			Object value = repoValues.get(propName);
+			if (Arrays.asList(PROPERTIES).contains(propName)){
+				if (value instanceof String){
+					c.setSimpleValue(propName, (String)value);
+				}else if (value instanceof Boolean){
+					c.setSimpleValue(propName, ((Boolean)value).toString());
+				}else if (value == null) {
+					c.setSimpleValue(propName, "Not Defined");
+				}
+			}
+		}
+
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -117,25 +195,9 @@ public class RepositoryComponent extends Facet {
 		return null;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @see org.rhq.plugins.jbossas5.ProfileServiceComponent#getConnection()
-	 */
 	@Override
-	public ProfileServiceConnection getConnection() {
-		return ((EngineComponent) this.resourceContext
-				.getParentResourceComponent()).getConnection();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @see org.rhq.plugins.jmx.JMXComponent#getEmsConnection()
-	 */
-	@Override
-	public EmsConnection getEmsConnection() {
-		return null;
+	public ASConnection getASConnection() {
+		return ((BaseComponent<BaseComponent<?>>) this.resourceContext.getParentResourceComponent()).getASConnection();
 	}
 
 }
